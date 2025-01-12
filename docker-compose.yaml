@@ -1,0 +1,44 @@
+services:
+  wd-db:
+    image: postgres:latest
+    container_name: wd-db
+    env_file:
+      - .env
+    networks:
+      - webnet
+    shm_size: "1gb"
+    ports:
+      - 3306:3306
+    volumes:
+      - /db-data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u wdAdmin --password=${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  wd-bekend:
+    image: nodejs-docker
+    restart: unless-stopped
+    build: ./
+    depends_on:
+      wd-db:
+        condition: service_healthy
+    ports:
+      - 0.0.0.0:3000:3000
+    env_file:
+      - .env
+    networks:
+      - webnet
+
+networks:
+  webnet:
+    name: webnet
+    driver: bridge
+    external: true
+
+
+volumes:
+  db-data:
